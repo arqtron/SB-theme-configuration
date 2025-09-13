@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+    <!-- ATTENTION: Created with the assistance of several AI tools. THIS IS AN ALPHA VERSION AND MAY CONTAIN ERRORS-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SilverBullet Theme Editor</title>
+    <!-- Optimized font loading and added Fira Code for the code editor -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;700&family=Fira+Code:wght@400;500&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --app-bg: #f4f7f9;
+            --app-panel-bg: #ffffff;
+            --app-text: #2c3e50;
+            --app-text-light: #7f8c8d;
+            --app-border: #e0e5ea;
+            --app-accent: #3498db;
+            --app-accent-dark: #2980b9;
+            --app-success: #27ae60;
+            --app-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--app-bg);
+            color: var(--app-text);
+            line-height: 1.6;
+            font-synthesis: none;
+            text-rendering: optimizeLegibility;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 2rem;
+            padding: 2rem;
+            height: 100vh;
+        }
+        .controls-panel {
+            background-color: var(--app-panel-bg);
+            border-radius: 12px;
+            box-shadow: var(--app-shadow);
+            padding: 1.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .controls-wrapper {
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-right: 1rem;
+            margin-right: -1rem;
+        }
+        .controls-wrapper.hidden, #welcome-message.hidden {
+            display: none;
+        }
+        #welcome-message {
+            text-align: center;
+            color: var(--app-text-light);
+            margin: auto;
+            padding: 2rem;
+        }
+        #welcome-message h3 {
+            margin-bottom: 1rem;
+            color: var(--app-accent);
+        }
+        #welcome-message ol {
+            text-align: left;
+            display: inline-block;
+            margin-top: 1rem;
+        }
+        header h1 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.8rem;
+            color: var(--app-accent);
+        }
+        header p {
+            margin: 0 0 1.5rem 0;
+            color: var(--app-text-light);
+        }
+        .file-io {
+            display: grid; /* IMPROVEMENT: Changed to grid for better alignment */
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .file-io button {
+            padding: 0.8rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        #load-btn { background-color: var(--app-success); color: white; }
+        #load-btn:hover { background-color: #229954; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        #save-md-btn { background-color: var(--app-accent); color: white; }
+        #save-md-btn:hover:not(:disabled) { background-color: var(--app-accent-dark); transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        
+        /* IMPROVEMENT: Styles for Reset button and general disabled state */
+        #reset-btn { background-color: #95a5a6; color: white; }
+        #reset-btn:hover:not(:disabled) { background-color: #7f8c8d; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; opacity: 0.6; }
+
+        #file-info {
+            font-size: 0.85rem;
+            color: var(--app-text-light);
+            min-height: 1.2em;
+            margin-bottom: 1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .theme-switcher { display: flex; margin-bottom: 1.5rem; border: 1px solid var(--app-border); border-radius: 8px; overflow: hidden; }
+        .theme-switcher button { flex-grow: 1; padding: 0.8rem; border: none; background-color: transparent; cursor: pointer; font-size: 1rem; font-weight: 600; color: var(--app-text-light); transition: all 0.2s ease; }
+        .theme-switcher button.active { background-color: var(--app-accent); color: white; }
+        .theme-switcher button:hover:not(.active) { background-color: rgba(52, 152, 219, 0.1); }
+        section { margin-bottom: 2rem; }
+        section h2 { font-size: 1.1rem; border-bottom: 2px solid var(--app-border); padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--app-accent); font-weight: 600; }
+        .control-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding: 0.5rem; border-radius: 6px; transition: background-color 0.2s ease; }
+        .control-item:hover { background-color: rgba(52, 152, 219, 0.05); }
+        .control-item label { font-weight: 500; color: var(--app-text); font-size: 0.95rem; }
+        .control-item input[type="color"] { -webkit-appearance: none; appearance: none; width: 45px; height: 45px; border: none; background: none; border-radius: 50%; cursor: pointer; overflow: hidden; border: 2px solid var(--app-border); transition: all 0.2s ease; }
+        .control-item input[type="color"]:hover { transform: scale(1.1); border-color: var(--app-accent); }
+        .control-item input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        .control-item input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
+        .control-item select { padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--app-border); font-size: 0.9rem; max-width: 200px; background-color: white; cursor: pointer; transition: all 0.2s ease; }
+        .control-item select:hover { border-color: var(--app-accent); }
+        .control-item select:focus { outline: none; border-color: var(--app-accent); box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1); }
+        .preview-panel { background-color: var(--app-panel-bg); border-radius: 12px; box-shadow: var(--app-shadow); overflow-y: auto; position: relative; }
+        #preview-content { padding: 2rem; min-height: 100%; transition: background-color 0.3s ease, color 0.3s ease; } /* IMPROVEMENT: Simplified transition */
+        .notification { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; z-index: 10000; font-weight: 600; animation: slideIn 0.3s ease-out; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+        @keyframes slideIn { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOut { to { transform: translateX(110%); opacity: 0; } }
+        .notification.error { background: #e53e3e; color: white; }
+        .notification.info { background: var(--app-success); color: white; }
+        code { font-family: 'Fira Code', 'IBM Plex Mono', monospace; background: rgba(52, 152, 219, 0.1); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+        .loading-spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: #ffffff; animation: spin 1s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls-panel">
+            <header>
+                <h1>🎨 SB Theme Editor</h1>
+                <p>Load your <code>theme.md</code> file, edit the styles, and save it.</p>
+                <div class="file-io">
+                    <input type="file" id="file-input" accept=".md" style="display: none;">
+                    <button id="load-btn">
+                        <span class="btn-text">📂 Load Theme (.md)</span>
+                        <span class="loading-spinner" style="display: none;"></span>
+                    </button>
+                    <button id="save-md-btn" disabled>💾 Save Theme (.md)</button>
+                    <!-- IMPROVEMENT: Added Reset button -->
+                    <button id="reset-btn" disabled>🔄 Reset</button>
+                </div>
+                <p id="file-info" title=""></p>
+                <div class="theme-switcher">
+                    <button id="light-mode-btn" class="active">☀️ Light Mode</button>
+                    <button id="dark-mode-btn">🌙 Dark Mode</button>
+                </div>
+            </header>
+            <div id="controls-container" class="controls-wrapper hidden">
+                <section id="color-controls">
+                    <h2>🎨 Main Colors</h2>
+                </section>
+                <section id="font-controls">
+                    <h2>📝 Fonts</h2>
+                </section>
+                <section id="syntax-controls">
+                    <h2>💻 Syntax Colors</h2>
+                </section>
+            </div>
+
+            <div id="welcome-message">
+                <h3>👋 Welcome to the Theme Editor</h3>
+                <p>A default theme has been loaded for you. Feel free to play around!</p>
+                <p><strong>Instructions:</strong></p>
+                <ol>
+                    <li>Adjust colors and fonts.</li>
+                    <li>Switch between light and dark mode.</li>
+                    <li>Load your own theme file if you wish.</li>
+                    <li>Download the modified theme.</li>
+                </ol>
+            </div>
+        </div>
+        <div class="preview-panel">
+            <div id="preview-content" data-theme="light">
+                <!-- Preview content (unchanged) -->
+                <div class="sb-frontmatter"><div class="sb-frontmatter-marker">---</div><div><span class="sb-atom">title:</span> Example Document</div><div><span class="sb-atom">created:</span> 2024-01-15</div><div class="sb-frontmatter-marker">---</div></div><h1 class="sb-h1"><span class="sb-meta">#</span> Main Heading</h1><h2 class="sb-h2"><span class="sb-meta">##</span> Important Subsection</h2><h3 class="sb-h3"><span class="sb-meta">###</span> Theme Details</h3><p>This is an example paragraph showing the style of normal text. It includes <code class="sb-code">inline code</code> and also <span class="sb-highlight">highlighted</span> text to demonstrate different styles. You can also see <a href="#">external links</a> and <span class="sb-wiki-link">[[internal links]]</span>.</p><h4>Task list:</h4><ul style="list-style: none; padding-left: 0;"><li style="display: flex; align-items: center; margin: 0.5em 0;"><input class="sb-checkbox" type="checkbox" checked style="margin-right: 0.5em;"> Completed task</li><li style="display: flex; align-items: center; margin: 0.5em 0;"><input class="sb-checkbox" type="checkbox" style="margin-right: 0.5em;"> Pending task</li></ul><p><strong>Tags:</strong> <span class="sb-hashtag" data-tag-name="A">#tag-A</span> <span class="sb-hashtag" data-tag-name="B">#tag-B</span> <span class="sb-hashtag" data-tag-name="C">#tag-C</span> <span class="sb-hashtag">#project</span></p><blockquote class="sb-blockquote">"Visual consistency and calm are the goals of this design. A good theme should aid concentration, not distract."</blockquote><div class="code-container"><div class="code-header"><span class="sb-code-info">javascript</span></div><div class="code-block sb-line-fenced-code"><span class="syntax-comment">// Example function</span><br><span class="syntax-keyword">function</span> <span class="syntax-variable">greetUser</span>(<span class="syntax-variable">name</span>) {<br>&nbsp;&nbsp;<span class="syntax-keyword">const</span> <span class="syntax-variable">message</span> <span class="syntax-operator">=</span> <span class="syntax-string">`Hello, ${name}!`</span>;<br>&nbsp;&nbsp;<span class="syntax-keyword">return</span> <span class="syntax-variable">message</span>.<span class="syntax-variable">length</span> <span class="syntax-operator">></span> <span class="syntax-number">10</span>;<br>}</div></div><h4>Example table:</h4><table class="sb-table"><thead><tr><td>Element</td><td>Description</td><td>Status</td></tr></thead><tbody><tr><td>Colors</td><td>Main theme palette</td><td>✅ Ready</td></tr><tr><td>Typography</td><td>Fonts and text styles</td><td>🔄 In progress</td></tr><tr><td>Syntax</td><td>Code highlighting</td><td>⏳ Pending</td></tr></tbody></table><hr class="sb-hr"><div style="margin: 1.5em 0;"><button class="sb-button">Example Button</button></div><p class="tip">💡 <strong>Tip:</strong> Switch between modes to see how your theme adapts.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- IMPROVEMENT: Externalized CSS for preview into a template for better maintainability -->
+    <template id="preview-style-template">
+        <style>
+            #preview-content { background: var(--surface-base); color: var(--text-primary); font-family: var(--editor-font); line-height: 1.6; }
+            #preview-content h1, #preview-content h2, #preview-content h3, #preview-content h4 { color: var(--text-primary); font-family: 'Antonio', sans-serif; margin: 1.5em 0 0.8em 0; line-height: 1.3; }
+            #preview-content h1 { font-size: 2.2em; } #preview-content h2 { font-size: 1.8em; } #preview-content h3 { font-size: 1.5em; } #preview-content h4 { font-size: 1.2em; }
+            #preview-content .sb-meta { color: rgb(var(--accent-primary)); font-weight: 500; margin-right: 0.5em; }
+            #preview-content p { color: var(--text-primary); line-height: 1.6; margin: 1em 0; }
+            #preview-content code, #preview-content .sb-code { font-family: var(--editor-mono-font); background: var(--surface-raised); padding: 3px 6px; border-radius: 4px; font-size: 0.9em; color: var(--text-secondary); border: 1px solid rgba(var(--accent-primary), 0.2); }
+            #preview-content .sb-highlight { background: rgba(var(--accent-primary), 0.8); color: white; padding: 2px 6px; border-radius: 3px; font-weight: 500; }
+            #preview-content .sb-wiki-link { background: rgba(var(--accent-primary), 0.15); color: rgb(var(--accent-primary)); padding: 3px 8px; border-radius: 4px; font-family: var(--editor-mono-font); font-size: 0.9em; text-decoration: none; border: 1px solid rgba(var(--accent-primary), 0.3); transition: all 0.2s ease; }
+            #preview-content .sb-wiki-link:hover { background: rgba(var(--accent-primary), 0.25); transform: translateY(-1px); }
+            #preview-content a { color: rgb(var(--accent-primary)); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.2s ease; }
+            #preview-content a:hover { border-bottom-color: rgb(var(--accent-primary)); }
+            #preview-content .sb-hashtag { background: rgba(var(--accent-primary), 0.15); color: rgb(var(--accent-primary)); padding: 3px 8px; border-radius: 12px; font-family: var(--editor-mono-font); font-size: 0.85em; margin: 0 3px; display: inline-block; font-weight: 500; border: 1px solid rgba(var(--accent-primary), 0.3); }
+            #preview-content .sb-hashtag[data-tag-name="A"] { background: #e76f51; color: white; border-color: #e76f51; }
+            #preview-content .sb-hashtag[data-tag-name="B"] { background: #e9c46a; color: #03045e; border-color: #e9c46a; }
+            #preview-content .sb-hashtag[data-tag-name="C"] { background: #2a9d8f; color: white; border-color: #2a9d8f; }
+            #preview-content .sb-blockquote { border-left: 4px solid rgb(var(--accent-primary)); margin: 1.5em 0; padding: 1em 1.5em; font-style: italic; color: var(--text-secondary); background: var(--surface-raised); border-radius: 0 8px 8px 0; }
+            #preview-content .sb-frontmatter { background: var(--surface-raised); border-radius: 8px; padding: 1em 1.5em; font-family: var(--editor-mono-font); font-size: 0.9em; margin: 1em 0; border: 1px solid rgba(var(--accent-primary), 0.2); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+            #preview-content .sb-frontmatter-marker { color: rgb(var(--accent-primary)); font-weight: bold; }
+            #preview-content .sb-atom { color: rgb(var(--accent-primary)); font-weight: 500; }
+            .code-container { margin: 1.5em 0; background: var(--surface-raised); border-radius: 8px; overflow: hidden; border: 1px solid rgba(var(--accent-primary), 0.2); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+            .code-header { padding: 0.8em 1.5em; background: var(--surface-base); border-bottom: 1px solid rgba(var(--accent-primary), 0.2); font-size: 0.85em; color: var(--text-secondary); font-weight: 500; }
+            .code-block { padding: 1.5em; font-family: var(--editor-mono-font); font-size: 0.9em; line-height: 1.6; overflow-x: auto; }
+            #preview-content .syntax-keyword { color: var(--syntax-keyword); font-weight: 600; }
+            #preview-content .syntax-string { color: var(--syntax-string); }
+            #preview-content .syntax-number { color: var(--syntax-number); font-weight: 500; }
+            #preview-content .syntax-variable { color: var(--syntax-variable); }
+            #preview-content .syntax-comment { color: var(--syntax-comment); font-style: italic; opacity: 0.8; }
+            #preview-content .syntax-operator { color: rgb(var(--accent-primary)); font-weight: 500; }
+            #preview-content .sb-table { width: 100%; border-collapse: collapse; margin: 1.5em 0; border-radius: 8px; overflow: hidden; border: 1px solid rgba(var(--accent-primary), 0.2); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+            #preview-content .sb-table thead tr { background: var(--surface-raised); }
+            #preview-content .sb-table tbody tr:nth-child(even) { background: var(--surface-raised); }
+            #preview-content .sb-table td { padding: 1em; border-bottom: 1px solid rgba(var(--accent-primary), 0.1); transition: background-color 0.2s ease; }
+            #preview-content .sb-table tbody tr:hover { background: rgba(var(--accent-primary), 0.05); }
+            #preview-content .sb-table tbody tr:last-child td { border-bottom: none; }
+            #preview-content .sb-hr { border: none; height: 2px; background: linear-gradient(90deg, rgb(var(--accent-primary)), transparent); margin: 2em 0; border-radius: 1px; }
+            #preview-content .sb-button { background: rgb(var(--accent-primary)); color: white; border: none; padding: 0.8em 1.5em; border-radius: 6px; font-weight: 600; cursor: pointer; font-family: var(--editor-font); transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(var(--accent-primary), 0.3); }
+            #preview-content .sb-button:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(var(--accent-primary), 0.4); }
+            #preview-content .sb-checkbox { appearance: none; width: 20px; height: 20px; border: 2px solid rgb(var(--accent-primary)); border-radius: 4px; position: relative; cursor: pointer; margin-right: 0.8em; transition: all 0.2s ease; background: var(--surface-base); }
+            #preview-content .sb-checkbox:checked { background: rgb(var(--accent-primary)); }
+            #preview-content .sb-checkbox:checked::before { content: ''; position: absolute; top: 50%; left: 50%; width: 4px; height: 8px; border: 2px solid white; border-top: none; border-left: none; transform: translate(-50%, -60%) rotate(45deg); }
+            #preview-content .tip { font-size: 0.95em; color: var(--text-secondary); margin-top: 2em; padding: 1.2rem; background: rgba(var(--accent-primary), 0.1); border-radius: 8px; border-left: 4px solid rgb(var(--accent-primary)); }
+            #preview-content ul, #preview-content ol { margin: 1em 0; padding-left: 1.5em; }
+            #preview-content li { margin: 0.5em 0; color: var(--text-primary); }
+        </style>
+    </template>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- STATE & CONFIG ---
+    let state = {
+        mode: 'light',
+        variables: {},
+        initialVariables: {}, // IMPROVEMENT: To store the original state for the reset functionality
+        markdownChunks: [],
+        originalFileName: 'theme_modified.md',
+    };
+
+    const CONFIG = {
+        colorControls: [ { label: 'Primary Accent', varName: '--accent-primary', type: 'rgb', global: true }, { label: 'Secondary Accent', varName: '--accent-secondary', type: 'hex', global: true }, { label: 'Base Background', varName: '--surface-base', type: 'hex' }, { label: 'Raised Background', varName: '--surface-raised', type: 'hex' }, { label: 'Primary Text', varName: '--text-primary', type: 'hex' }, { label: 'Secondary Text', varName: '--text-secondary', type: 'hex' } ],
+        fontControls: [ { label: 'Main Font', varName: '--editor-font', global: true, options: [ "'Inter', sans-serif", "'IBM Plex Sans', sans-serif", "Georgia, serif" ] }, { label: 'Code Font', varName: '--editor-mono-font', global: true, options: [ "'IBM Plex Mono', monospace", "'Fira Code', monospace", "'Source Code Pro', monospace" ] } ],
+        syntaxControls: [ { label: 'Keywords', varName: '--syntax-keyword', type: 'hex' }, { label: 'Strings', varName: '--syntax-string', type: 'hex' }, { label: 'Numbers', varName: '--syntax-number', type: 'hex' }, { label: 'Variables', varName: '--syntax-variable', type: 'hex' }, { label: 'Comments', varName: '--syntax-comment', type: 'hex' } ]
+    };
+
+    // IMPROVEMENT: UX - Load a default theme so the user can interact immediately.
+    const DEFAULT_THEME_CONTENT = `---
+name: Default Zen Theme
+description: A clean and focused theme to start with.
+---
+
+\`\`\`space-style
+/* This is a default theme loaded by the editor. You can edit it and save it as your own. */
+:root {
+  --accent-primary: 247, 111, 83;
+  --accent-secondary: #8B5CF6;
+  --editor-font: 'Inter', sans-serif;
+  --editor-mono-font: 'IBM Plex Mono', monospace;
+}
+html[data-theme="light"] {
+  --surface-base: #FAF7F2;
+  --surface-raised: #E8E3D4;
+  --text-primary: #666359;
+  --text-secondary: #4f4c42;
+  --syntax-keyword: #C73E1D;
+  --syntax-string: #047857;
+  --syntax-number: #B45309;
+  --syntax-variable: #1E40AF;
+  --syntax-comment: #6B7280;
+}
+html[data-theme="dark"] {
+  --surface-base: #1F1F1F;
+  --surface-raised: #363636;
+  --text-primary: #E8E8E8;
+  --text-secondary: #D1CFC0;
+  --syntax-keyword: #f75389;
+  --syntax-string: #34D399;
+  --syntax-number: #FBBF24;
+  --syntax-variable: #60A5FA;
+  --syntax-comment: #6B7280;
+}
+\`\`\``;
+
+    // --- DOM ELEMENTS ---
+    const fileInput = document.getElementById('file-input');
+    const loadBtn = document.getElementById('load-btn');
+    const saveMdBtn = document.getElementById('save-md-btn');
+    const resetBtn = document.getElementById('reset-btn'); // IMPROVEMENT: Reset button
+    const fileInfo = document.getElementById('file-info');
+    const lightModeBtn = document.getElementById('light-mode-btn');
+    const darkModeBtn = document.getElementById('dark-mode-btn');
+    const previewContent = document.getElementById('preview-content');
+    const controlsContainer = document.getElementById('controls-container');
+    const welcomeMessage = document.getElementById('welcome-message');
+
+    // --- UTILITY FUNCTIONS ---
+    const hexToRgb = (hex) => { if (!hex || !hex.startsWith('#')) return '0, 0, 0'; const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex); return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '0, 0, 0'; };
+    const rgbToHex = (rgbStr) => { if (!rgbStr || typeof rgbStr !== 'string') return '#000000'; const rgbMatch = rgbStr.match(/(\d+),?\s*(\d+),?\s*(\d+)/); if (!rgbMatch) return '#000000'; const [, r, g, b] = rgbMatch; const toHex = (num) => parseInt(num, 10).toString(16).padStart(2, '0'); return `#${toHex(r)}${toHex(g)}${toHex(b)}`; };
+    const extractCSSVariable = (cssText, varName, theme = null) => {
+  const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const varRegex = new RegExp(`${escapeRegExp(varName)}:\\s*([^;\\n}]+)`, 'i');
+
+  if (theme) {
+    const themeBlockRegex = new RegExp(`html\\[data-theme="${theme}"\\]\\s*\\{([\\s\\S]*?)\\}`, 'i');
+    const match = cssText.match(themeBlockRegex);
+    if (match && match[1]) {
+      const block = match[1];
+      const m = block.match(varRegex);
+      if (m) return m[1].trim();
+    }
+  } else {
+    const rootBlockRegex = /:root\s*\{([\s\S]*?)\}/i;
+    const match = cssText.match(rootBlockRegex);
+    if (match && match[1]) {
+      const block = match[1];
+      const m = block.match(varRegex);
+      if (m) return m[1].trim();
+    }
+  }
+
+  // fallback: buscar la variable en todo el texto (por si estaba fuera de bloques)
+  const globalMatch = cssText.match(varRegex);
+  return globalMatch ? globalMatch[1].trim() : null;
+}; 
+    const showNotification = (message, type = 'info') => { const notification = document.createElement('div'); notification.className = `notification ${type}`; notification.textContent = message; document.body.appendChild(notification); setTimeout(() => { notification.style.animation = 'slideOut 0.3s ease-out forwards'; notification.addEventListener('animationend', () => notification.remove()); }, 3000); };
+    const isGlobalVar = (varName) => {
+  const allControls = [].concat(...Object.values(CONFIG)); // o Object.values(CONFIG).flat()
+  const control = allControls.find(c => c.varName === varName);
+  return !!control?.global;
+};
+    // --- FILE HANDLING ---
+    const handleFileLoad = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        if (!file.name.endsWith('.md')) { showNotification('Please select a .md file', 'error'); return; }
+        loadBtn.disabled = true;
+        loadBtn.querySelector('.btn-text').style.display = 'none';
+        loadBtn.querySelector('.loading-spinner').style.display = 'inline-block';
+        state.originalFileName = file.name.replace(/\.md$/, '_modified.md');
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const content = e.target.result;
+                if (!content.trim()) { throw new Error('The file is empty'); }
+                parseMarkdownFile(content);
+                fileInfo.textContent = `📄 ${file.name}`;
+                fileInfo.title = file.name;
+                saveMdBtn.disabled = false;
+                resetBtn.disabled = false;
+                welcomeMessage.classList.add('hidden');
+                controlsContainer.classList.remove('hidden');
+                showNotification('✅ Theme loaded successfully');
+            } catch (error) {
+                console.error('Error processing file:', error);
+                showNotification(`Error processing file: ${error.message}`, 'error');
+            } finally {
+                loadBtn.disabled = false;
+                loadBtn.querySelector('.btn-text').style.display = 'inline';
+                loadBtn.querySelector('.loading-spinner').style.display = 'none';
+                fileInput.value = '';
+            }
+        };
+        reader.onerror = () => { showNotification('Could not read the file', 'error'); loadBtn.disabled = false; loadBtn.querySelector('.btn-text').style.display = 'inline'; loadBtn.querySelector('.loading-spinner').style.display = 'none'; };
+        reader.readAsText(file);
+    };
+
+    const parseMarkdownFile = (content) => {
+        const cssBlockRegex = /```(space-style|css)[\s\S]*?```/g;
+        state.markdownChunks = [];
+        let lastIndex = 0; let match;
+        while ((match = cssBlockRegex.exec(content)) !== null) {
+            if (match.index > lastIndex) { state.markdownChunks.push({ type: 'markdown', content: content.slice(lastIndex, match.index) }); }
+            state.markdownChunks.push({ type: 'css', content: match[0] });
+            lastIndex = match.index + match[0].length;
+        }
+        if (lastIndex < content.length) { state.markdownChunks.push({ type: 'markdown', content: content.slice(lastIndex) }); }
+        const cssOnlyContent = state.markdownChunks.filter(c => c.type === 'css').map(c => c.content.replace(/```(space-style|css)|```/g, '')).join('\n');
+        initializeStateFromCSS(cssOnlyContent);
+    };
+
+    // --- INITIALIZATION ---
+    const initializeStateFromCSS = (cssContent) => {
+        state.variables = {};
+        const allControls = [].concat(...Object.values(CONFIG));
+        allControls.forEach(control => {
+            const varName = control.varName;
+            if (isGlobalVar(varName)) {
+                let globalValue = extractCSSVariable(cssContent, varName) || extractCSSVariable(cssContent, varName, 'light') || extractCSSVariable(cssContent, varName, 'dark');
+                state.variables[varName] = { light: globalValue || getDefaultValue(varName), dark: globalValue || getDefaultValue(varName) };
+            } else {
+                state.variables[varName] = { light: extractCSSVariable(cssContent, varName, 'light') || getDefaultValue(varName, 'light'), dark: extractCSSVariable(cssContent, varName, 'dark') || getDefaultValue(varName, 'dark') };
+            }
+        });
+        // IMPROVEMENT: Store a deep copy of the initial state for the reset functionality
+        state.initialVariables = JSON.parse(JSON.stringify(state.variables));
+        setupControls();
+        updateControls();
+        updatePreview();
+    };
+
+    const getDefaultValue = (varName, theme = 'light') => {
+        const defaults = { '--accent-primary': '247, 111, 83', '--accent-secondary': '#8B5CF6', '--surface-base': theme === 'dark' ? '#1F1F1F' : '#FAF7F2', '--surface-raised': theme === 'dark' ? '#363636' : '#E8E3D4', '--text-primary': theme === 'dark' ? '#E8E8E8' : '#666359', '--text-secondary': theme === 'dark' ? '#D1CFC0' : '#4f4c42', '--editor-font': "'Inter', sans-serif", '--editor-mono-font': "'IBM Plex Mono', monospace", '--syntax-keyword': theme === 'dark' ? '#f75389' : '#C73E1D', '--syntax-string': theme === 'dark' ? '#34D399' : '#047857', '--syntax-number': theme === 'dark' ? '#FBBF24' : '#B45309', '--syntax-variable': theme === 'dark' ? '#60A5FA' : '#1E40AF', '--syntax-comment': theme === 'dark' ? '#6B7280' : '#6B7280' };
+        return defaults[varName] || (theme === 'dark' ? '#ffffff' : '#000000');
+    };
+
+    const setupControls = () => {
+        const containers = { colorControls: document.getElementById('color-controls'), fontControls: document.getElementById('font-controls'), syntaxControls: document.getElementById('syntax-controls'), };
+        Object.values(containers).forEach(c => c.innerHTML = `<h2>${c.querySelector('h2').innerHTML}</h2>`);
+        CONFIG.colorControls.forEach(c => createControlItem(containers.colorControls, c));
+        CONFIG.fontControls.forEach(c => createControlItem(containers.fontControls, c));
+        CONFIG.syntaxControls.forEach(c => createControlItem(containers.syntaxControls, c));
+    };
+
+    const createControlItem = (container, controlConfig) => {
+        const { label, varName, type, options } = controlConfig;
+        const item = document.createElement('div');
+        item.className = 'control-item';
+        const labelEl = document.createElement('label');
+        labelEl.textContent = label;
+        labelEl.htmlFor = `control-${varName}`;
+        item.appendChild(labelEl);
+        if (options) {
+            const select = document.createElement('select');
+            select.id = `control-${varName}`;
+            select.dataset.varName = varName;
+            select.innerHTML = options.map(opt => `<option value="${opt}">${opt.split(',')[0].replace(/'/g, '')}</option>`).join('');
+            select.addEventListener('change', handleInputChange);
+            item.appendChild(select);
+        } else {
+            const input = document.createElement('input');
+            input.id = `control-${varName}`;
+            input.type = 'color';
+            input.dataset.varName = varName;
+            input.dataset.type = type;
+            input.addEventListener('input', handleInputChange);
+            item.appendChild(input);
+        }
+        container.appendChild(item);
+    };
+
+    // --- UI UPDATE LOGIC ---
+    const updateControls = () => {
+        document.querySelectorAll('[data-var-name]').forEach(el => {
+            const varName = el.dataset.varName;
+            const value = state.variables[varName]?.[state.mode];
+            if (value === undefined) return;
+            if (el.type === 'color') {
+                el.value = el.dataset.type === 'rgb' ? rgbToHex(value) : value;
+            } else if (el.tagName === 'SELECT') {
+                el.value = value;
+            }
+        });
+    };
+
+    const handleInputChange = (e) => {
+        const { varName, type } = e.target.dataset;
+        let value = e.target.value;
+        if (type === 'rgb') { value = hexToRgb(value); }
+        if (isGlobalVar(varName)) { state.variables[varName].light = value; state.variables[varName].dark = value; } else { state.variables[varName][state.mode] = value; }
+        updatePreview();
+    };
+
+    // IMPROVEMENT: PERFORMANCE - This function is now highly optimized.
+    // It only sets CSS variables on the preview element, instead of rebuilding a huge CSS string.
+    const updatePreview = () => {
+        Object.entries(state.variables).forEach(([varName, values]) => {
+            const value = values[state.mode];
+            if (value !== undefined) {
+                previewContent.style.setProperty(varName, value);
+            }
+        });
+    };
+
+    // IMPROVEMENT: MAINTAINABILITY - This function injects the static preview styles once.
+    const setupPreviewStyles = () => {
+        const template = document.getElementById('preview-style-template');
+        const styleNode = template.content.cloneNode(true);
+        document.head.appendChild(styleNode);
+    };
+    
+    const switchMode = (newMode) => {
+        state.mode = newMode;
+        previewContent.dataset.theme = newMode;
+        lightModeBtn.classList.toggle('active', newMode === 'light');
+        darkModeBtn.classList.toggle('active', newMode === 'dark');
+        updateControls();
+        updatePreview();
+    };
+
+    // --- FILE SAVING ---
+    // IMPROVEMENT: ROBUSTNESS - Rewritten save logic to be more reliable.
+    // It reconstructs the CSS from the state, ensuring a clean and predictable output.
+    const generateModifiedMarkdown = () => {
+        const nonCssChunks = state.markdownChunks
+            .filter(chunk => chunk.type === 'markdown')
+            .map(chunk => chunk.content)
+            .join('');
+
+        const globalVars = [], lightVars = [], darkVars = [];
+        Object.entries(state.variables).forEach(([varName, values]) => {
+            if (isGlobalVar(varName)) {
+                globalVars.push(`  ${varName}: ${values.light};`);
+            } else {
+                lightVars.push(`  ${varName}: ${values.light};`);
+                darkVars.push(`  ${varName}: ${values.dark};`);
+            }
+        });
+
+        const newCssBlock = `\`\`\`space-style
+:root {
+${globalVars.join('\n')}
+}
+
+html[data-theme="light"] {
+${lightVars.join('\n')}
+}
+
+html[data-theme="dark"] {
+${darkVars.join('\n')}
+}
+\`\`\``;
+        return (nonCssChunks.trim() ? nonCssChunks.trim() + '\n\n' : '') + newCssBlock;
+    };
+
+    const downloadFile = (content, fileName) => {
+        const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = fileName;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    // --- EVENT LISTENERS ---
+    loadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', handleFileLoad);
+
+    saveMdBtn.addEventListener('click', () => {
+        try {
+            const modifiedContent = generateModifiedMarkdown();
+            downloadFile(modifiedContent, state.originalFileName);
+            showNotification('✅ Theme saved successfully');
+        } catch (error) {
+            console.error('Error saving file:', error);
+            showNotification('Error saving file', 'error');
+        }
+    });
+
+    // IMPROVEMENT: Event listener for the new Reset button.
+    resetBtn.addEventListener('click', () => {
+        if (Object.keys(state.initialVariables).length > 0) {
+            state.variables = JSON.parse(JSON.stringify(state.initialVariables));
+            updateControls();
+            updatePreview();
+            showNotification('🔄 Changes have been reset');
+        }
+    });
+
+    lightModeBtn.addEventListener('click', () => switchMode('light'));
+    darkModeBtn.addEventListener('click', () => switchMode('dark'));
+    
+    // -- INITIALIZATION --
+    setupPreviewStyles(); // Inject static styles once.
+
+    try { // Load the default theme on startup for a better UX.
+        parseMarkdownFile(DEFAULT_THEME_CONTENT);
+        fileInfo.textContent = `📄 Default Zen Theme (Example)`;
+        fileInfo.title = `Default Zen Theme (Example)`;
+        saveMdBtn.disabled = false;
+        resetBtn.disabled = false;
+        welcomeMessage.classList.add('hidden');
+        controlsContainer.classList.remove('hidden');
+    } catch (e) {
+        console.error("Failed to load default theme", e);
+        showNotification("Could not load default theme", "error");
+        welcomeMessage.classList.remove('hidden');
+    }
+    
+    switchMode('light');
+});
+</script>
+</body>
+</html>
